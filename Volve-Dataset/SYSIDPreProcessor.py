@@ -1,6 +1,7 @@
 from sklearn.base import BaseEstimator, TransformerMixin, RegressorMixin
 from sklearn.linear_model import LinearRegression
 import numpy as np
+import torch
 
 
 class DimensionMismatchException(Exception):
@@ -155,6 +156,37 @@ class SYSIDRegressor(BaseEstimator, RegressorMixin, TransformerMixin):
             Phi, _ = self.transform(X[:i+1,:], yhat[:i+1,:])
             Phi_i = Phi[-1,:].reshape(1,-1)
         return yhat
+
+
+class SYSIDNNRegressor(SYSIDRegressor):
+
+    def __matReg(self,X,Y):
+        
+        nx, ny, kx, ky, N, Nx, p = self.__estimate_parameters(X, Y)
+            
+        # create target vector
+        target = Y[p-1:,:]
+
+        # create regression matrix
+        Phi = np.zeros((N-p+1,np.sum(ny+nx)), dtype='float32')
+        counter = 0
+        for i in range(ky):
+            ny_i = ny[i]
+            y = Y[:,i]
+            for j in range(ny_i):
+                Phi[:,counter] = y[p-j-2: N-j-1].reshape(-1)
+                counter +=1
+                #print(Phi.shape, counter)
+
+        for i in range(kx):
+            nx_i = nx[i]
+            x = X[:,i]
+            for j in range(nx_i):
+                Phi[:,counter] = x[p-j-2: N-j-1].reshape(-1)
+                counter +=1
+                #print(Phi.shape, counter)
+
+        return (torch.from_numpy(target).float(), torch.from_numpy(Phi))
 
 
 class CONTSIDEstimator(BaseEstimator, RegressorMixin, TransformerMixin):
