@@ -1,4 +1,5 @@
 *.pkl
+*.pyc
 
 # commenting initial ARX models as not to polute the remote,
 ARX*.ipynb
